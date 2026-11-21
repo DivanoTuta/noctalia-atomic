@@ -68,18 +68,18 @@ jobs:
           fi
 
       - name: Validate Python code (Ruff lint)
-        uses: astral-sh/ruff-action@v4
+        uses: astral-sh/ruff-action@v4.1.0
         with:
           src: files
 
       - name: Check Python formatting (Ruff format)
-        uses: astral-sh/ruff-action@v4
+        uses: astral-sh/ruff-action@v4.1.0
         with:
           args: format --check
           src: files
 
       - name: Set up Python for mypy
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.14'
 
