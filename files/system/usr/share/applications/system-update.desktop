@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Actualizar Sistema
+Comment=Actualiza la imagen base atómica, aplicaciones Flatpak y contenedores Distrobox con ujust
+Exec=alacritty --hold --class noctalia-system-update --title "Actualización del Sistema" -e ujust update
+Icon=system-software-update
+Terminal=false
+Type=Application
+Categories=System;
+Keywords=update;actualizar;sistema;upgrade;flatpak;ujust;distrobox;

@@ -1,0 +1,19 @@
+# Containerfiles generados por BlueBuild localmente
+Containerfile
+
+# Imágenes ISO locales
+*.iso
+*.iso.sha256
+
+# Claves privadas de firma (¡NUNCA subir a Git!)
+*.key
+cosign.key
+
+# Archivos temporales, cachés de linters y de editores
+.DS_Store
+*.swp
+*~
+/.bluebuild-scripts_*
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/

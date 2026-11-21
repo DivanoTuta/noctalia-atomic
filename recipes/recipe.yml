@@ -1,0 +1,139 @@
+---
+# yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
+name: noctalia-atomic
+description: Fedora Atomic personalizada con Niri, Noctalia Shell y Noctalia Greeter sobre uBlue base-main
+base-image: ghcr.io/ublue-os/base-main
+image-version: latest # Puedes fijarlo a 45 o usar latest
+
+modules:
+  - type: dnf
+    repos:
+      copr:
+        - yalter/niri
+      files:
+        - lionheartp-Hyprland.repo
+        - vscode.repo
+    install:
+      packages:
+        # Compositor, Shell y Greeter
+        - niri
+        - noctalia
+        - noctalia-greeter-git
+        - greetd
+        - greetd-selinux
+        - xwayland-satellite
+
+        # Portales XDG, Llavero (Keyring) y Biometría
+        - xdg-desktop-portal-gnome
+        - xdg-desktop-portal-gtk
+        - gnome-keyring
+        - gnome-keyring-pam
+        - seahorse
+        - fprintd
+        - fprintd-pam
+
+        # Terminal, Shell y Utilidades CLI
+        - alacritty
+        - fish
+        - fuzzel
+        - wl-clipboard
+        - btop
+        - fastfetch
+
+        # Audio, Brillo, Energía, Sensores y Red (control de hardware)
+        - playerctl
+        - brightnessctl
+        - pavucontrol
+        - nm-connection-editor
+        - blueman
+        - power-profiles-daemon
+        - upower
+        - ddcutil
+        - lm_sensors
+        - nethogs
+
+        # Gestor de archivos, discos y complementos de Nautilus
+        - nautilus
+        - nautilus-python
+        - blueman-nautilus
+        - gnome-disk-utility
+        - sushi
+        - ffmpegthumbnailer
+        - gvfs-mtp
+        - gvfs-smb
+        - gvfs-nfs
+        - gvfs-gphoto2
+        - gvfs-afc
+        - p7zip
+        - p7zip-plugins
+        - unzip
+
+        # Desarrollo y Entornos Inmutables
+        - distrobox
+        - code
+
+        # Gaming y Rendimiento
+        - steam
+        - steam-devices
+        - mangohud
+
+        # Fuentes del sistema y ofimática
+        - google-noto-sans-cjk-fonts
+        - google-noto-emoji-fonts
+        - google-carlito-fonts
+        - google-crosextra-caladea-fonts
+
+  - type: files
+    files:
+      - source: system
+        destination: /
+
+  - type: script
+    snippets:
+      - |
+        nethogs_bin="$(readlink -f "$(command -v nethogs)")"
+        chgrp wheel "${nethogs_bin}"
+        chmod 0750 "${nethogs_bin}"
+        setcap 'cap_net_admin,cap_net_raw,cap_dac_read_search,cap_sys_ptrace+pe' "${nethogs_bin}"
+      - "authselect enable-feature with-fingerprint"
+
+  - type: fonts
+    fonts:
+      nerd-fonts:
+        - JetBrainsMono
+        - NerdFontsSymbolsOnly
+
+  - type: default-flatpaks
+    configurations:
+      - notify: false
+        scope: system
+        install:
+          - org.mozilla.firefox
+          - org.gnome.TextEditor
+          - org.gnome.Calculator
+          - org.gnome.Loupe
+          - org.gnome.Papers
+          - org.libreoffice.LibreOffice
+          - io.github.celluloid_player.Celluloid
+          - org.videolan.VLC
+          - io.missioncenter.MissionCenter
+          - org.gnome.baobab
+          - org.gnome.FileRoller
+          - io.github.kolunmi.Bazaar
+          - io.github.flattool.Warehouse
+          - com.github.tchx84.Flatseal
+          - io.github.seadve.Kooha
+
+  - type: systemd
+    system:
+      enabled:
+        - greetd.service
+        - power-profiles-daemon.service
+        - bluetooth.service
+    user:
+      masked:
+        - org.freedesktop.IBus.session.GNOME.service
+        - grub-boot-success.service
+        - grub-boot-success.timer
+
+  - type: signing

@@ -1,0 +1,96 @@
+name: Build Custom Atomic Image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'recipes/**'
+      - 'files/**'
+      - 'modules/**'
+      - 'cosign.pub'
+      - '.github/workflows/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'recipes/**'
+      - 'files/**'
+      - 'modules/**'
+      - 'cosign.pub'
+      - '.github/workflows/**'
+  schedule:
+    # Ejecuta una compilación diaria a las 06:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  validate:
+    name: Validate Recipe and Scripts
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Validate shell scripts
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends shfmt
+          shfmt -d -i 4 -ci \
+            files/system/usr/libexec/noctalia-greeter-wrapper.sh \
+            files/system/usr/lib/systemd/user-environment-generators/10-noctalia-graphics.sh
+          sh -n files/system/usr/libexec/noctalia-greeter-wrapper.sh
+          sh -n files/system/usr/lib/systemd/user-environment-generators/10-noctalia-graphics.sh
+          shellcheck --shell=sh --external-sources \
+            files/system/usr/libexec/noctalia-greeter-wrapper.sh \
+            files/system/usr/lib/systemd/user-environment-generators/10-noctalia-graphics.sh
+
+      - name: Validate Python extension
+        uses: astral-sh/ruff-action@v4
+        with:
+          src: files/system/usr/share/nautilus-python/extensions/open-alacritty.py
+
+      - name: Check Python formatting
+        uses: astral-sh/ruff-action@v4
+        with:
+          args: format --check
+          src: files/system/usr/share/nautilus-python/extensions/open-alacritty.py
+
+      - name: Validate BlueBuild recipe
+        run: |
+          set -euo pipefail
+          container_id="$(docker create --pull always ghcr.io/blue-build/cli:latest-installer)"
+          trap 'docker rm -f "${container_id}" >/dev/null 2>&1 || true' EXIT
+          docker cp "${container_id}:/out/bluebuild" /tmp/bluebuild
+          chmod +x /tmp/bluebuild
+          /tmp/bluebuild validate recipes/recipe.yml
+
+  bluebuild:
+    name: Build Custom Image
+    needs: validate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Build Image
+        uses: blue-build/github-action@v1
+        with:
+          recipe: recipe.yml
+          cosign_private_key: ${{ secrets.SIGNING_SECRET }}
+          registry_token: ${{ github.token }}
+          pr_event_number: ${{ github.event.number }}
+          maximize_build_space: true
