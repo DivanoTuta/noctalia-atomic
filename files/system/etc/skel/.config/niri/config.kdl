@@ -1,7 +1,6 @@
-// This config is in the KDL format: https://kdl.dev
-// "/-" comments out the following node.
-// Check the wiki for a full description of the configuration:
-// https://niri-wm.github.io/niri/Configuration:-Introduction
+// Configuración de Niri en formato KDL: https://kdl.dev
+// "/-" comenta el nodo siguiente.
+// Documentación completa: https://niri-wm.github.io/niri/Configuration:-Introduction
 
 prefer-no-csd
 
@@ -113,9 +112,10 @@ window-rule {
     open-maximized-to-edges false
 }
 
-// Blur realista en Alacritty (aprovechando su opacidad 0.90)
+// Blur realista en Alacritty y en la ventana de actualización (aprovechando su opacidad 0.85)
 window-rule {
     match app-id=r#"^Alacritty$"#
+    match app-id=r#"^noctalia-system-update$"#
     background-effect {
         blur true
         xray false

@@ -25,7 +25,7 @@ BlueBuild recipe repo that builds a Fedora Atomic / uBlue bootc image (`ghcr.io/
   - Early-boot/system scripts (`files/system/usr/libexec/noctalia-greeter-wrapper.sh`, `files/system/usr/lib/systemd/user-environment-generators/10-noctalia-graphics.sh`) are POSIX `/usr/bin/sh`: run `shfmt -d`, `sh -n`, and `shellcheck --shell=sh --external-sources`.
   - If adding interactive CLI scripts in the future, use Bash 5+ (`#!/usr/bin/env bash`) and validate with `shfmt -d`, `bash -n`, and `shellcheck --shell=bash --external-sources`.
   - Python extension (`files/system/usr/share/nautilus-python/extensions/open-alacritty.py`): run `ruff format --check`, `ruff check`, and `mypy --strict --ignore-missing-imports`.
-- CI is authoritative: `.github/workflows/build.yml` runs a `validate` job (`shfmt`, `shellcheck`, `desktop-file-validate`, `ruff`, `mypy`, `bluebuild validate`) before building on pushes/PRs to `main` touching `recipes/**`, `files/**`, `modules/**`, `cosign.pub`, `.editorconfig` or the workflow, daily at 06:00 UTC, and manually. It needs the `SIGNING_SECRET` repository secret.
+- CI is authoritative: `.github/workflows/build.yml` runs a `validate` job (`shfmt`, `shellcheck`, `desktop-file-validate`, `ruff`, `tomllib` TOML check, `mypy`, `bluebuild validate`) before building on pushes/PRs to `main` touching `recipes/**`, `files/**`, `modules/**`, `cosign.pub`, `.editorconfig` or the workflow, daily at 06:00 UTC, and manually. It needs the `SIGNING_SECRET` repository secret.
 
 ## Layout and editing rules
 
@@ -36,7 +36,8 @@ BlueBuild recipe repo that builds a Fedora Atomic / uBlue bootc image (`ghcr.io/
 - Vendor drop-ins and system wrappers live under `/usr`: `files/system/usr/lib/systemd/system/greetd.service.d/override.conf` and `files/system/usr/libexec/noctalia-greeter-wrapper.sh`.
 - `~/.cache/niri-vm-quirks.kdl` is generated atomically by `10-noctalia-graphics.sh` and included optionally by `niri/config.kdl`. Do not hardcode VM-only quirks into `config.kdl`; greeter VM handling lives in `noctalia-greeter-wrapper.sh` (`vmwgfx` -> software rendering).
 - Dotfiles live under `/etc/skel` and only affect newly created users; changes do not migrate existing home directories. Mention this when a change is meant for current users.
-- System updates delegate directly to Universal Blue's native `ujust update` (`rpm-ostree update`, `flatpak update`, `distrobox upgrade`) via `files/system/usr/share/applications/system-update.desktop` (`alacritty --hold --class noctalia-system-update ... -e ujust update`) and the Fish `update` alias. Automatic background staging is handled by `rpm-ostreed-automatic.timer` (toggleable with `ujust toggle-updates`).
+- Default icon theme (`Papirus-Dark` from `papirus-icon-theme`) is configured system-wide via `files/system/usr/share/glib-2.0/schemas/99-noctalia-atomic.gschema.override` (compiled in `recipe.yml` with `glib-compile-schemas`) plus `/etc/skel/.config/gtk-{3,4}.0/settings.ini`.
+- System updates delegate directly to Universal Blue's native `ujust update` (`rpm-ostree update`, `flatpak update`, `distrobox upgrade`) via `files/system/usr/share/applications/system-update.desktop` (`alacritty --class noctalia-system-update ... -e /usr/bin/sh -c ...` with an end-of-run `Enter`-to-close prompt) and the Fish `update` alias. Automatic background staging is handled by `rpm-ostreed-automatic.timer` (toggleable with `ujust toggle-updates`).
 - `nethogs` capabilities (`recipe.yml`), RAPL `energy_uj` permissions (`99-powercap.rules`), and passwordless `noctalia-greeter` appearance sync (`files/system/usr/share/polkit-1/rules.d/49-noctalia-greeter-sync.rules`) are restricted to the `wheel` group so admin workflows work smoothly while limiting local exposure.
 - The CI path filter mentions `modules/**`, but no `modules/` directory exists. Create it only when adding custom BlueBuild modules.
 - `Containerfile` is generated locally and gitignored; do not edit or commit it.
@@ -45,4 +46,4 @@ BlueBuild recipe repo that builds a Fedora Atomic / uBlue bootc image (`ghcr.io/
 
 - Docs, code comments, UI strings, and commit messages are in Spanish; keep that style. Commits use `feat:` / `fix:` prefixes.
 - Early-boot/system scripts use `#!/usr/bin/sh` (POSIX, no Bashisms); interactive CLI scripts (if added) use `#!/usr/bin/env bash` (Bash 5+ strict mode).
-- Niri comes from the `yalter/niri` COPR; `noctalia-greeter` comes from the `lionheartp/Hyprland` repo, which is restricted via `includepkgs=noctalia-greeter*`.
+- Niri comes from the `yalter/niri` COPR; `noctalia-greeter` comes from the `lionheartp/Hyprland` repo (`includepkgs=noctalia-greeter*`); VS Code comes from `vscode.repo` (`includepkgs=code`).

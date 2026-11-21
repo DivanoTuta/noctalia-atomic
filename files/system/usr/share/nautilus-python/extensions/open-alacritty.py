@@ -105,7 +105,7 @@ class OpenAlacrittyExtension(
             Lista con el elemento de menú si hay una única carpeta local seleccionada,
             o lista vacía en caso contrario.
         """
-        if not args:
+        if not args or args[-1] is None:
             return []
         files = cast("Sequence[_NautilusFileInfo]", args[-1])
         if len(files) != 1:

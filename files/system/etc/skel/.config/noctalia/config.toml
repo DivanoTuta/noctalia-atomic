@@ -7,7 +7,7 @@ enabled = true
 tint_intensity = 0.3
 
 [bar.default]
-background_opacity = 0.6
+background_opacity = 0.85
 font_scale = 1.42
 font_weight = 600
 start = [ "launcher", "wallpaper", "workspaces" ]
@@ -22,7 +22,7 @@ width = 900
 
 [dock]
 active_monitor_only = true
-background_opacity = 0.6
+background_opacity = 0.85
 enabled = true
 icon_shadow = true
 reserve_space = false
@@ -51,6 +51,7 @@ auto_locate = true
 blur_intensity = 0.48
 
 [shell]
+avatar_path = "/usr/share/noctalia-atomic/mountain.jpg"
 corner_radius_scale = 0.95
 niri_overview_close_on_launch_enabled = true
 niri_overview_type_to_launch_enabled = true

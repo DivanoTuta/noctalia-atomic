@@ -10,10 +10,10 @@ Imagen personalizada de **Fedora Atomic** basada en **Universal Blue (`ghcr.io/u
 - **Desarrollo:** Visual Studio Code nativo + `distrobox` (entornos reproducibles sin tocar el sistema base).
 - **Gaming:** Steam nativo con reglas de mandos (`steam-devices`) y overlay `mangohud`.
 - **Gestión de aplicaciones:** `Bazaar` (tienda moderna), `Warehouse` (limpieza y versiones) y `Flatseal` (permisos de Flatpak).
-- **Herramientas del Sistema, Hardware y Red:** `Mission Center` (monitor de recursos, GPU, red por proceso con `nethogs` y consumo eléctrico RAPL), `Baobab` (espacio en disco), `Discos` (`gnome-disk-utility`), `File Roller` (comprimidos con `7zip`, `unrar`, `unar` y `unzip`), `Blueman` (Bluetooth), `pavucontrol` (audio), `nm-connection-editor` (red), `Seahorse` + `gnome-keyring` (llavero de claves), `lm_sensors` (temperaturas), `brightnessctl` y `ddcutil` (brillo de monitores).
+- **Herramientas del Sistema, Hardware y Red:** `Mission Center` (monitor de recursos, GPU, red por proceso con `nethogs` y consumo eléctrico RAPL), `Baobab` (espacio en disco), `Discos` (`gnome-disk-utility`), `GParted` (particionado avanzado), `File Roller` (comprimidos con `7zip`, `unrar`, `unar` y `unzip`), `Blueman` (Bluetooth), `pavucontrol` (audio), `nm-connection-editor` (red), `Seahorse` + `gnome-keyring` (llavero de claves), `lm_sensors` (temperaturas), `brightnessctl` y `ddcutil` (brillo de monitores).
 - **Multimedia y Grabación:** `Kooha` (grabador de pantalla y audio GTK4), `Celluloid` (reproductor principal GTK/mpv), `VLC` (reproductor universal) y `Loupe` (visor de imágenes).
 - **Archivos:** `Nautilus` con previsualización rápida `sushi`, miniaturas de vídeo `ffmpegthumbnailer`, menú contextual (*«Abrir en Alacritty»* y *«Enviar por Bluetooth»*) y soporte nativo para dispositivos USB Android/iOS (`gvfs-mtp`, `gvfs-afc`, `gvfs-gphoto2`) y carpetas en red (`gvfs-smb`, `gvfs-nfs`).
-- **Dotfiles preconfigurados en `/etc/skel`:** Configuración lista para nuevos usuarios de Niri (teclado `es`, reglas flotantes y atajos adaptados a distribución española), Noctalia (bloqueo automático tras 10 min de inactividad, apagado de pantalla a los 11 min —o 30 s tras bloquear—, escala `ui_scale = 1.25` y `auto_locate = true`, personalizables desde Ajustes), Alacritty, Fish, temas GTK 3/4 y overrides globales de Flatpak.
+- **Dotfiles preconfigurados en `/etc/skel`:** Configuración lista para nuevos usuarios de Niri (teclado `es`, reglas flotantes y atajos adaptados a distribución española), Noctalia (bloqueo automático tras 10 min de inactividad, apagado de pantalla a los 11 min —o 30 s tras bloquear—, escala `ui_scale = 1.25` y `auto_locate = true`, personalizables desde Ajustes), Alacritty, `btop`, Fish, temas GTK 3/4 (con iconos `Papirus-Dark` por defecto) y overrides globales de Flatpak.
 - **Mantenimiento del Sistema:** Integración directa con el actualizador nativo de Universal Blue (`ujust update`, accesible desde el lanzador como **Actualizar Sistema** o con el alias `update` en Fish), actualizaciones automáticas en segundo plano (`rpm-ostreed-automatic.timer`) y utilidades `ujust` para firmware (`fwupd`), *changelogs* y limpieza.
 
 ---
@@ -21,18 +21,20 @@ Imagen personalizada de **Fedora Atomic** basada en **Universal Blue (`ghcr.io/u
 ## Estructura del Proyecto
 
 - `recipes/recipe.yml`: Receta principal de BlueBuild (módulos `dnf`, `files`, `script`, `fonts`, `default-flatpaks`, `systemd`, `signing`).
-- `files/dnf/`: Definiciones de repositorios externos (`lionheartp-Hyprland.repo` restringido a `noctalia-greeter*` y `vscode.repo`).
+- `files/dnf/`: Definiciones de repositorios externos (`lionheartp-Hyprland.repo` restringido a `noctalia-greeter*` y `vscode.repo` restringido a `code`).
 - `files/system/etc/greetd/config.toml`: Configuración de `greetd` apuntando al wrapper de `noctalia-greeter-session`.
 - `files/system/usr/libexec/noctalia-greeter-wrapper.sh`: Wrapper de `noctalia-greeter-session` con detección automática de VMware (`vmwgfx`).
 - `files/system/usr/share/noctalia-atomic/greeter.toml` y `files/system/usr/lib/tmpfiles.d/noctalia-greeter.conf`: Configuración declarativa del greeter aplicada en cada arranque (`C+`) sobre `/var/lib/noctalia-greeter/greeter.toml`.
+- `files/system/usr/share/noctalia-atomic/mountain.jpg`: Avatar de usuario por defecto (`512×512`) configurado en Noctalia y sincronizado con `noctalia-greeter` mediante `accountsservice`.
 - `files/system/usr/lib/systemd/system/greetd.service.d/override.conf`: Drop-in de `greetd.service` (orden de arranque tras Plymouth, fallback a `getty@tty1` y etiquetado SELinux).
 - `files/system/usr/lib/systemd/user-environment-generators/10-noctalia-graphics.sh`: Generador de entorno que selecciona Vulkan/OpenGL y ajusta cursor DRM y *blur* en Niri según hardware real o máquina virtual.
 - `files/system/usr/lib/environment.d/10-noctalia-atomic.conf`: Variables de entorno globales de sesión (`ELECTRON_OZONE_PLATFORM_HINT=auto`).
 - `files/system/usr/lib/udev/rules.d/`: Reglas `udev` para sensores de energía RAPL (`99-powercap.rules`) y discos NVMe virtuales de VMware (`99-vmware-nvme.rules`).
+- `files/system/usr/share/glib-2.0/schemas/99-noctalia-atomic.gschema.override`: Override global de GSettings que fija `Papirus-Dark` como tema de iconos por defecto (Noctalia, GTK y portales Flatpak).
 - `files/system/usr/share/polkit-1/rules.d/49-noctalia-greeter-sync.rules`: Regla Polkit restringida al grupo `wheel` para sincronizar la apariencia de Noctalia con `noctalia-greeter` sin pedir contraseña.
-- `files/system/usr/share/applications/system-update.desktop`: Entrada en el lanzador que ejecuta `ujust update` en una ventana flotante de Alacritty (`alacritty --hold`).
+- `files/system/usr/share/applications/system-update.desktop`: Entrada en el lanzador que ejecuta `ujust update` en una ventana flotante de Alacritty con aviso final para cerrar con `Enter`.
 - `files/system/usr/share/nautilus-python/extensions/open-alacritty.py`: Extensión de Nautilus para abrir carpetas locales en Alacritty.
-- `files/system/etc/skel/`: Dotfiles por defecto para nuevos usuarios (`niri`, `noctalia`, `alacritty`, `fish`, `gtk-3.0`, `gtk-4.0` y `.local/share/flatpak/overrides/global`).
+- `files/system/etc/skel/`: Dotfiles por defecto para nuevos usuarios (`niri`, `noctalia`, `alacritty`, `btop`, `fish`, `gtk-3.0`, `gtk-4.0` y `.local/share/flatpak/overrides/global`).
 - `files/system/usr/share/backgrounds/noctalia/`: Fondo de pantalla preinstalado.
 - `.editorconfig`: Reglas de formato compartidas para scripts shell (`shfmt` y editores).
 - `cosign.pub`: Clave pública de verificación de firma de la imagen.
@@ -94,6 +96,80 @@ sudo bootc switch --transport containers-storage localhost/noctalia-atomic:lates
 
 systemctl reboot
 ```
+
+---
+
+## Instalación Limpia mediante ISO
+
+Si quieres instalar **Noctalia Atomic** desde cero (en un equipo nuevo o en una máquina virtual) en lugar de hacer *rebase* sobre una instalación previa de Fedora Atomic, puedes generar una ISO instaladora a partir de tu imagen publicada en GHCR.
+
+### 1. Generar la ISO con BlueBuild
+
+Requiere [BlueBuild CLI](#1-instalar-bluebuild-cli) y Podman:
+
+```bash
+bluebuild generate-iso \
+  --variant kinoite \
+  --iso-name noctalia-atomic.iso \
+  -o ./iso-out \
+  image ghcr.io/<tu-usuario>/noctalia-atomic:latest
+```
+
+> [!NOTE]
+> Si `/tmp` tiene poco espacio disponible, añade `--tempdir /ruta/con/espacio` al comando anterior.
+
+### 2. Instalar activando la creación de usuario (`inst.profile=fedora-sericea`)
+
+> [!IMPORTANT]
+> A partir de Fedora 44/45, el perfil de Anaconda `fedora-kinoite` oculta las pantallas de creación de usuario y contraseña porque delega ese paso en `plasma-setup` (que esta imagen no incluye). Si instalas con el perfil por defecto, el sistema arrancará sin usuarios creados y no podrás iniciar sesión en `noctalia-greeter`.
+
+Al arrancar el equipo o la VM desde `noctalia-atomic.iso`:
+
+1. En el menú de arranque (**GRUB**) del instalador, selecciona la entrada de instalación y pulsa **`e`**.
+2. Al final de la línea que empieza por `linux`, añade:
+   ```text
+   inst.profile=fedora-sericea
+   ```
+   *(En GRUB el teclado usa distribución inglesa US; en un teclado físico español, `=` está en la tecla `¡` `¿` a la izquierda de Retroceso y `-` en la tecla `'` `?` a la derecha del `0`.)*
+3. Pulsa **`Ctrl+X`** (o **`F10`**) para iniciar el instalador.
+4. En la pantalla de cuentas de Anaconda:
+   - Crea tu usuario y marca **«Hacer administrador a este usuario»** (añade la cuenta al grupo `wheel`, necesario para `sudo` y para los permisos locales descritos en [Seguridad y Permisos Locales](#seguridad-y-permisos-locales)).
+   - Deja la cuenta **`root` deshabilitada** (configuración recomendada en Fedora Atomic).
+
+El perfil `fedora-sericea` hereda del perfil base `fedora` (muestra la creación de usuario y contraseña en Anaconda) y conserva el particionado **Btrfs** de Fedora Atomic (`/`, `/home` y `/var` con compresión `zstd:1`).
+
+### Alternativa: generar una ISO que pida usuario por defecto (sin editar GRUB)
+
+Por debajo, `bluebuild generate-iso` ejecuta el contenedor `ghcr.io/jasonn3/build-container-installer:v1.5.0`, pero no expone ninguna opción para añadir parámetros al menú de arranque de la ISO. Si prefieres obtener una ISO lista para arrancar e instalar sin editar GRUB a mano, puedes lanzar ese mismo contenedor directamente con `EXTRA_BOOT_PARAMS="inst.profile=fedora-sericea"`, que graba el parámetro en el `grub.cfg` (BIOS y UEFI) de la propia ISO:
+
+```bash
+mkdir -p ./iso-out ./dnf-cache
+
+sudo podman run --rm --privileged \
+  --security-opt label=disable \
+  -v "$PWD/iso-out:/build-container-installer/build" \
+  -v "$PWD/dnf-cache:/cache/dnf" \
+  ghcr.io/jasonn3/build-container-installer:v1.5.0 \
+  VARIANT=Kinoite \
+  VERSION=45 \
+  IMAGE_REPO=ghcr.io/<tu-usuario> \
+  IMAGE_NAME=noctalia-atomic \
+  IMAGE_TAG=latest \
+  ISO_NAME=build/noctalia-atomic.iso \
+  DNF_CACHE=/cache/dnf \
+  SECURE_BOOT_KEY_URL=https://github.com/ublue-os/bazzite/raw/main/secure_boot.der \
+  ENROLLMENT_PASSWORD=universalblue \
+  WEB_UI=false \
+  EXTRA_BOOT_PARAMS="inst.profile=fedora-sericea"
+```
+
+- `--privileged` y `--security-opt label=disable`: necesarios para que `lorax` monte dispositivos *loop* al generar el instalador.
+- `-v .../build` y `-v .../dnf`: carpetas locales para la ISO resultante y la caché de paquetes DNF.
+- `SECURE_BOOT_KEY_URL` y `ENROLLMENT_PASSWORD`: clave MOK pública de Universal Blue (`universalblue`), igual que añade `bluebuild` por defecto.
+- `EXTRA_BOOT_PARAMS`: deja `inst.profile=fedora-sericea` fijado en el arranque de la ISO (creación de usuario + Btrfs Atomic).
+
+> [!NOTE]
+> Ajusta `VERSION` si tu imagen está basada en una versión de Fedora distinta de la 45.
 
 ---
 

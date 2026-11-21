@@ -21,6 +21,7 @@ modules:
         - noctalia-greeter-git
         - greetd
         - greetd-selinux
+        - accountsservice
         - xwayland-satellite
 
         # Portales XDG, Llavero (Keyring) y Biometría
@@ -56,6 +57,8 @@ modules:
         - nautilus-python
         - blueman-nautilus
         - gnome-disk-utility
+        - gparted
+        - xhost
         - sushi
         - ffmpegthumbnailer
         - gvfs-mtp
@@ -77,11 +80,15 @@ modules:
         - steam-devices
         - mangohud
 
-        # Fuentes del sistema y ofimática
+        # Fuentes del sistema, iconos y ofimática
+        - papirus-icon-theme
         - google-noto-sans-cjk-fonts
         - google-noto-emoji-fonts
         - google-carlito-fonts
         - google-crosextra-caladea-fonts
+    remove:
+      packages:
+        - htop
 
   - type: files
     files:
@@ -96,6 +103,7 @@ modules:
         chmod -- 0750 "${nethogs_bin}"
         setcap 'cap_net_admin,cap_net_raw,cap_dac_read_search,cap_sys_ptrace+pe' "${nethogs_bin}"
       - "authselect enable-feature with-fingerprint"
+      - "glib-compile-schemas /usr/share/glib-2.0/schemas"
 
   - type: fonts
     fonts:
@@ -127,6 +135,7 @@ modules:
   - type: systemd
     system:
       enabled:
+        - accounts-daemon.service
         - greetd.service
         - power-profiles-daemon.service
         - bluetooth.service

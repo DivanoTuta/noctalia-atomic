@@ -83,6 +83,18 @@ jobs:
         with:
           python-version: '3.14'
 
+      - name: Validate TOML configuration files
+        run: |
+          set -euo pipefail
+          python3 -c '
+          import pathlib, tomllib
+
+          for path in sorted(pathlib.Path("files").rglob("*.toml")):
+              with path.open("rb") as handle:
+                  tomllib.load(handle)
+              print(f"TOML OK: {path}")
+          '
+
       - name: Validate Python typing (mypy)
         run: |
           set -euo pipefail
