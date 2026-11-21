@@ -10,7 +10,7 @@ Imagen personalizada de **Fedora Atomic** basada en **Universal Blue (`ghcr.io/u
 - **Desarrollo:** Visual Studio Code nativo + `distrobox` (entornos reproducibles sin tocar el sistema base).
 - **Gaming:** Steam nativo con reglas de mandos (`steam-devices`) y overlay `mangohud`.
 - **Gestión de aplicaciones:** `Bazaar` (tienda moderna), `Warehouse` (limpieza y versiones) y `Flatseal` (permisos de Flatpak).
-- **Herramientas del Sistema, Hardware y Red:** `Mission Center` (monitor de recursos, GPU, red por proceso con `nethogs` y consumo eléctrico RAPL), `Baobab` (espacio en disco), `Discos` (`gnome-disk-utility`), `GParted` (particionado avanzado), `File Roller` (comprimidos con `7zip`, `unrar`, `unar` y `unzip`), `Blueman` (Bluetooth), `pavucontrol` (audio), `nm-connection-editor` (red), `Seahorse` + `gnome-keyring` (llavero de claves), `lm_sensors` (temperaturas), `brightnessctl` y `ddcutil` (brillo de monitores).
+- **Herramientas del Sistema, Hardware y Red:** `Mission Center` (monitor de recursos, GPU, red por proceso con `nethogs` y consumo eléctrico RAPL), `Baobab` (espacio en disco), `Discos` (`gnome-disk-utility`), `GParted` (particionado avanzado, con `mate-polkit` como proveedor ligero de `PolicyKit-authentication-agent`), `File Roller` (comprimidos con `7zip`, `unrar`, `unar` y `unzip`), `Blueman` (Bluetooth bajo demanda vía D-Bus, con autostart enmascarado para no duplicar el widget de Noctalia), `pavucontrol` (audio), `nm-connection-editor` + `nm-connection-editor-desktop` (red), `Seahorse` + `oo7` (`oo7-daemon`, `oo7-portal`, `pam_oo7` como llavero de secretos moderno en Rust), `lm_sensors` (temperaturas), `brightnessctl` y `ddcutil` (brillo de monitores).
 - **Multimedia y Grabación:** `Kooha` (grabador de pantalla y audio GTK4), `Celluloid` (reproductor principal GTK/mpv), `VLC` (reproductor universal) y `Loupe` (visor de imágenes).
 - **Archivos:** `Nautilus` con previsualización rápida `sushi`, miniaturas de vídeo `ffmpegthumbnailer`, menú contextual (*«Abrir en Alacritty»* y *«Enviar por Bluetooth»*) y soporte nativo para dispositivos USB Android/iOS (`gvfs-mtp`, `gvfs-afc`, `gvfs-gphoto2`) y carpetas en red (`gvfs-smb`, `gvfs-nfs`).
 - **Dotfiles preconfigurados en `/etc/skel`:** Configuración lista para nuevos usuarios de Niri (teclado `es`, reglas flotantes y atajos adaptados a distribución española), Noctalia (bloqueo automático tras 10 min de inactividad, apagado de pantalla a los 11 min —o 30 s tras bloquear—, escala `ui_scale = 1.25` y `auto_locate = true`, personalizables desde Ajustes), Alacritty, `btop`, Fish, temas GTK 3/4 (con iconos `Papirus-Dark` por defecto) y overrides globales de Flatpak.
@@ -30,6 +30,7 @@ Imagen personalizada de **Fedora Atomic** basada en **Universal Blue (`ghcr.io/u
 - `files/system/usr/lib/systemd/user-environment-generators/10-noctalia-graphics.sh`: Generador de entorno que selecciona Vulkan/OpenGL y ajusta cursor DRM y *blur* en Niri según hardware real o máquina virtual.
 - `files/system/usr/lib/environment.d/10-noctalia-atomic.conf`: Variables de entorno globales de sesión (`ELECTRON_OZONE_PLATFORM_HINT=auto`).
 - `files/system/usr/lib/udev/rules.d/`: Reglas `udev` para sensores de energía RAPL (`99-powercap.rules`) y discos NVMe virtuales de VMware (`99-vmware-nvme.rules`).
+- `files/system/usr/share/dbus-1/services/org.freedesktop.secrets.service` y `files/system/usr/share/xdg-desktop-portal/niri-portals.conf`: Activación D-Bus y portal de secretos XDG configurados para `oo7-daemon` / `oo7-portal`.
 - `files/system/usr/share/glib-2.0/schemas/99-noctalia-atomic.gschema.override`: Override global de GSettings que fija `Papirus-Dark` como tema de iconos por defecto (Noctalia, GTK y portales Flatpak).
 - `files/system/usr/share/polkit-1/rules.d/49-noctalia-greeter-sync.rules`: Regla Polkit restringida al grupo `wheel` para sincronizar la apariencia de Noctalia con `noctalia-greeter` sin pedir contraseña.
 - `files/system/usr/share/applications/system-update.desktop`: Entrada en el lanzador que ejecuta `ujust update` en una ventana flotante de Alacritty con aviso final para cerrar con `Enter`.
@@ -38,7 +39,7 @@ Imagen personalizada de **Fedora Atomic** basada en **Universal Blue (`ghcr.io/u
 - `files/system/usr/share/backgrounds/noctalia/`: Fondo de pantalla preinstalado.
 - `.editorconfig`: Reglas de formato compartidas para scripts shell (`shfmt` y editores).
 - `cosign.pub`: Clave pública de verificación de firma de la imagen.
-- `.github/workflows/build.yml`: Pipeline de GitHub Actions que valida receta, scripts, archivos `.desktop` y Python (`ruff`/`mypy`), y compila/publica la imagen en GHCR (`ghcr.io/<tu-usuario>/noctalia-atomic`).
+- `.github/workflows/build.yml`: Pipeline de GitHub Actions que valida receta, scripts, archivos `.desktop`, archivos TOML (`tomllib`) y Python (`ruff`/`mypy`), y compila/publica la imagen en GHCR (`ghcr.io/<tu-usuario>/noctalia-atomic`).
 
 ---
 
@@ -146,6 +147,7 @@ Por debajo, `bluebuild generate-iso` ejecuta el contenedor `ghcr.io/jasonn3/buil
 mkdir -p ./iso-out ./dnf-cache
 
 sudo podman run --rm --privileged \
+  --network=host \
   --security-opt label=disable \
   -v "$PWD/iso-out:/build-container-installer/build" \
   -v "$PWD/dnf-cache:/cache/dnf" \
@@ -164,6 +166,7 @@ sudo podman run --rm --privileged \
 ```
 
 - `--privileged` y `--security-opt label=disable`: necesarios para que `lorax` monte dispositivos *loop* al generar el instalador.
+- `--network=host`: reutiliza la red y DNS del equipo anfitrión (evita errores de resolución DNS dentro del contenedor en redes con DNS local o `systemd-resolved`).
 - `-v .../build` y `-v .../dnf`: carpetas locales para la ISO resultante y la caché de paquetes DNF.
 - `SECURE_BOOT_KEY_URL` y `ENROLLMENT_PASSWORD`: clave MOK pública de Universal Blue (`universalblue`), igual que añade `bluebuild` por defecto.
 - `EXTRA_BOOT_PARAMS`: deja `inst.profile=fedora-sericea` fijado en el arranque de la ISO (creación de usuario + Btrfs Atomic).
@@ -181,6 +184,7 @@ sudo podman run --rm --privileged \
 > ```bash
 > cp -r --update=none /etc/skel/. ~/
 > ```
+> Ten en cuenta que `--update=none` solo copia ficheros que aún no existan en tu `$HOME`; si una actualización futura modifica un archivo que ya tenías (por ejemplo `~/.config/niri/config.kdl`), deberás copiarlo o fusionarlo manualmente desde `/etc/skel`.
 
 ### 2. Actualizar el sistema y utilidades `ujust`
 La imagen base `ublue-os/base-main` trae activadas por defecto las **actualizaciones automáticas en segundo plano** (`rpm-ostreed-automatic.timer` con política `stage`), por lo que si el sistema apunta a un registro remoto (como GHCR) las capas nuevas se descargan solas y se aplican en el siguiente reinicio.
@@ -203,7 +207,7 @@ Cuando quieras actualizar manualmente al momento, abre **Actualizar Sistema** de
    ```
 > [!NOTE]
 > - `greeter.toml` habilita `allow_empty_password = true` para poder pulsar **Enter** con el campo vacío e iniciar la lectura biométrica en `greetd`. Debido a cómo serializa PAM los módulos en Fedora (`pam_fprintd` antes de `pam_unix`), mientras se espera la huella el inicio con contraseña queda en espera hasta que la lectura finalice o expire su *timeout*.
-> - Al iniciar sesión mediante huella en `greetd`, PAM no recibe tu contraseña en claro y no puede descifrar automáticamente el llavero `gnome-keyring`. Si usas cifrado de disco completo (LUKS) y prefieres evitar el aviso del llavero, puedes gestionar su contraseña desde **Seahorse**.
+> - Al iniciar sesión mediante huella en `greetd`, PAM no recibe tu contraseña en claro y no puede descifrar automáticamente el llavero (`oo7-daemon`). Si usas cifrado de disco completo (LUKS) y prefieres evitar el aviso del llavero, puedes gestionar su contraseña desde **Seahorse**.
 
 ### 4. Atajos de teclado esenciales (Niri)
 
@@ -244,7 +248,7 @@ Para habilitar métricas avanzadas de **Mission Center** y la sincronización fl
 - **Aceleración Gráfica y Cursor DRM Dinámicos:** el generador de entorno `10-noctalia-graphics.sh` detecta automáticamente si el sistema se ejecuta en hardware real o virtualizado:
   - **Hardware real (Intel, AMD o NVIDIA):** GTK4/Libadwaita y Flatpaks usan **Vulkan** de forma nativa, y Niri mantiene activos el **plano de cursor DRM por hardware** y el **blur nativo**.
   - **Máquinas virtuales (VMware, VirtualBox, QEMU/KVM):** se exporta `GSK_RENDERER=gl` (evitando la emulación por CPU *Lavapipe*) y se genera `~/.cache/niri-vm-quirks.kdl` con `disable-cursor-plane` y `blur { off }` para mantener la fluidez.
-  - **Pantalla de login (`greetd`):** el wrapper `/usr/libexec/noctalia-greeter-wrapper.sh` detecta `vmwgfx` (VMware) para activar renderizado por software (`pixman`) y evitar errores de `dma-buf`.
+  - **Pantalla de login (`greetd`):** el wrapper `/usr/libexec/noctalia-greeter-wrapper.sh` detecta `vmwgfx` (VMware) para activar renderizado por software (`pixman`) y desactivar KMS atómico (`WLR_DRM_NO_ATOMIC=1`), evitando errores de `dma-buf` y commits atómicos `-EBUSY`.
 - **Discos Virtuales NVMe (VMware):** la regla `99-vmware-nvme.rules` detecta el controlador NVMe virtual de VMware (`0x15ad:0x07f0`) y ajusta `io_timeout=2000` (2 s) y `nr_requests=64` para evitar bloqueos de 30 s por pérdida de interrupciones MSI-X. Adicionalmente, en VMware se recomienda desactivar APST en los argumentos del kernel:
   ```bash
   sudo rpm-ostree kargs --append-if-missing=nvme_core.default_ps_max_latency_us=0

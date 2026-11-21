@@ -14,6 +14,13 @@ modules:
         - lionheartp-Hyprland.repo
         - vscode.repo
     install:
+      # Evitar que los Recommends de niri instalen utilidades duplicadas o gnome-keyring
+      exclude:
+        - fuzzel
+        - waybar
+        - swaylock
+        - gnome-keyring
+        - gnome-keyring-pam
       packages:
         # Compositor, Shell y Greeter
         - niri
@@ -24,11 +31,13 @@ modules:
         - accountsservice
         - xwayland-satellite
 
-        # Portales XDG, Llavero (Keyring) y Biometría
+        # Portales XDG, Llavero (oo7), Polkit y Biometría
         - xdg-desktop-portal-gnome
         - xdg-desktop-portal-gtk
-        - gnome-keyring
-        - gnome-keyring-pam
+        - oo7-daemon
+        - oo7-portal
+        - pam_oo7
+        - mate-polkit
         - seahorse
         - fprintd
         - fprintd-pam
@@ -45,6 +54,7 @@ modules:
         - brightnessctl
         - pavucontrol
         - nm-connection-editor
+        - nm-connection-editor-desktop
         - blueman
         - power-profiles-daemon
         - upower
@@ -98,12 +108,18 @@ modules:
   - type: script
     snippets:
       - |
-        nethogs_bin="$(readlink -f "$(command -v nethogs)")"
+        nethogs_bin="$(readlink --canonicalize-existing "$(command -v nethogs)")"
         chgrp -- wheel "${nethogs_bin}"
         chmod -- 0750 "${nethogs_bin}"
         setcap 'cap_net_admin,cap_net_raw,cap_dac_read_search,cap_sys_ptrace+pe' "${nethogs_bin}"
       - "authselect enable-feature with-fingerprint"
       - "glib-compile-schemas /usr/share/glib-2.0/schemas"
+      - |
+        for pam_file in /etc/pam.d/passwd /usr/lib/pam.d/greetd; do
+          if [[ -f "${pam_file}" ]] && ! grep --quiet --extended-regexp 'pam_oo7\.so.*use_authtok' "${pam_file}"; then
+            printf '\n-password   optional    pam_oo7.so use_authtok\n' >> "${pam_file}"
+          fi
+        done
 
   - type: fonts
     fonts:
@@ -140,7 +156,10 @@ modules:
         - power-profiles-daemon.service
         - bluetooth.service
     user:
+      enabled:
+        - oo7-daemon.service
       masked:
+        - app-blueman@autostart.service
         - org.freedesktop.IBus.session.GNOME.service
         - grub-boot-success.service
         - grub-boot-success.timer
