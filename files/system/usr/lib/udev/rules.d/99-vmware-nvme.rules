@@ -1,2 +1,2 @@
 # Evita bloqueos de 30s por pérdida de interrupciones MSI-X en controladores NVMe virtuales de VMware (0x15ad:0x07f0)
-ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="nvme*n*", ATTRS{vendor}=="0x15ad", ATTRS{device}=="0x07f0", ATTR{queue/io_timeout}="2000", ATTR{queue/nr_requests}="64"
+ACTION=="add|change", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", KERNEL=="nvme*n*", ATTRS{vendor}=="0x15ad", ATTRS{device}=="0x07f0", ATTR{queue/io_timeout}="2000", ATTR{queue/nr_requests}="64"

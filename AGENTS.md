@@ -4,6 +4,14 @@
 
 BlueBuild recipe repo that builds a Fedora Atomic / uBlue bootc image (`ghcr.io/ublue-os/base-main`), not an application codebase. There is no app source, test suite, or package manifest. The build inputs are `recipes/recipe.yml` and the `files/` tree.
 
+## Security & Secrets (MANDATORY)
+
+- **STRICT PROHIBITION — Private keys (`cosign.key`, `*.key`):** Agents MUST NEVER read, open, inspect, print, search inside, copy, encode, stage, or commit `cosign.key` or any `*.key` file, under any circumstances.
+  - This prohibition applies to **all** tools and commands without exception: file-reading tools, search/grep tools, shell commands (`cat`, `head`, `tail`, `less`, `grep`, `rg`, `sed`, `awk`, `strings`, `base64`, `xxd`, `python`, etc.), and git commands (`git add`, `git diff`, `git show`).
+  - Checking mere file presence or permissions via metadata-only listing (e.g., `ls -la cosign*`) without reading file contents is allowed only when strictly necessary.
+  - If a task requires using, rotating, or configuring `cosign.key` (for example, setting the `SIGNING_SECRET` secret in GitHub), do **not** access the file; instruct the user to perform that step directly.
+- Only `cosign.pub` (the public verification key) may be read and committed to Git. CI image signing uses the `SIGNING_SECRET` GitHub repository secret.
+
 ## Commands
 
 - Fast recipe check without building: `bluebuild validate recipes/recipe.yml`.
@@ -13,10 +21,11 @@ BlueBuild recipe repo that builds a Fedora Atomic / uBlue bootc image (`ghcr.io/
   - Output image: `localhost/noctalia-atomic:latest`.
 - Apply the locally built image: `sudo bootc switch --transport containers-storage localhost/noctalia-atomic:latest` then `systemctl reboot`.
 - Validation for changed scripts:
-  - Early-boot/system scripts (`files/system/usr/libexec/noctalia-greeter-wrapper.sh`, `files/system/usr/lib/systemd/user-environment-generators/10-noctalia-graphics.sh`) are POSIX `/usr/bin/sh`: run `shfmt -d -i 4 -ci`, `sh -n`, and `shellcheck --shell=sh`.
-  - If adding interactive CLI scripts in the future, use Bash 5+ (`#!/usr/bin/env bash`) and validate with `shfmt -d -i 4 -ci`, `bash -n`, and `shellcheck --shell=bash`.
+  - `.editorconfig` defines shell formatting (`indent_style = space`, `indent_size = 4`, `switch_case_indent = true`); run `shfmt -d` without `-i`/`-ci` flags so it honors `.editorconfig`.
+  - Early-boot/system scripts (`files/system/usr/libexec/noctalia-greeter-wrapper.sh`, `files/system/usr/lib/systemd/user-environment-generators/10-noctalia-graphics.sh`) are POSIX `/usr/bin/sh`: run `shfmt -d`, `sh -n`, and `shellcheck --shell=sh --external-sources`.
+  - If adding interactive CLI scripts in the future, use Bash 5+ (`#!/usr/bin/env bash`) and validate with `shfmt -d`, `bash -n`, and `shellcheck --shell=bash --external-sources`.
   - Python extension (`files/system/usr/share/nautilus-python/extensions/open-alacritty.py`): run `ruff format --check`, `ruff check`, and `mypy --strict --ignore-missing-imports`.
-- CI is authoritative: `.github/workflows/build.yml` runs a `validate` job (shfmt, shellcheck, ruff, `bluebuild validate`) before building on pushes/PRs to `main` touching `recipes/**`, `files/**`, `modules/**`, `cosign.pub` or the workflow, daily at 06:00 UTC, and manually. It needs the `SIGNING_SECRET` repository secret.
+- CI is authoritative: `.github/workflows/build.yml` runs a `validate` job (`shfmt`, `shellcheck`, `desktop-file-validate`, `ruff`, `mypy`, `bluebuild validate`) before building on pushes/PRs to `main` touching `recipes/**`, `files/**`, `modules/**`, `cosign.pub`, `.editorconfig` or the workflow, daily at 06:00 UTC, and manually. It needs the `SIGNING_SECRET` repository secret.
 
 ## Layout and editing rules
 
@@ -28,7 +37,7 @@ BlueBuild recipe repo that builds a Fedora Atomic / uBlue bootc image (`ghcr.io/
 - `~/.cache/niri-vm-quirks.kdl` is generated atomically by `10-noctalia-graphics.sh` and included optionally by `niri/config.kdl`. Do not hardcode VM-only quirks into `config.kdl`; greeter VM handling lives in `noctalia-greeter-wrapper.sh` (`vmwgfx` -> software rendering).
 - Dotfiles live under `/etc/skel` and only affect newly created users; changes do not migrate existing home directories. Mention this when a change is meant for current users.
 - System updates delegate directly to Universal Blue's native `ujust update` (`rpm-ostree update`, `flatpak update`, `distrobox upgrade`) via `files/system/usr/share/applications/system-update.desktop` (`alacritty --hold --class noctalia-system-update ... -e ujust update`) and the Fish `update` alias. Automatic background staging is handled by `rpm-ostreed-automatic.timer` (toggleable with `ujust toggle-updates`).
-- `nethogs` capabilities (`recipe.yml`) and RAPL `energy_uj` permissions (`99-powercap.rules`) are restricted to the `wheel` group so Mission Center works for admin users while limiting local exposure.
+- `nethogs` capabilities (`recipe.yml`), RAPL `energy_uj` permissions (`99-powercap.rules`), and passwordless `noctalia-greeter` appearance sync (`files/system/usr/share/polkit-1/rules.d/49-noctalia-greeter-sync.rules`) are restricted to the `wheel` group so admin workflows work smoothly while limiting local exposure.
 - The CI path filter mentions `modules/**`, but no `modules/` directory exists. Create it only when adding custom BlueBuild modules.
 - `Containerfile` is generated locally and gitignored; do not edit or commit it.
 
@@ -36,5 +45,4 @@ BlueBuild recipe repo that builds a Fedora Atomic / uBlue bootc image (`ghcr.io/
 
 - Docs, code comments, UI strings, and commit messages are in Spanish; keep that style. Commits use `feat:` / `fix:` prefixes.
 - Early-boot/system scripts use `#!/usr/bin/sh` (POSIX, no Bashisms); interactive CLI scripts (if added) use `#!/usr/bin/env bash` (Bash 5+ strict mode).
-- Never commit `cosign.key` or any `*.key` (gitignored). The public key is `cosign.pub`; CI signing uses `SIGNING_SECRET`.
 - Niri comes from the `yalter/niri` COPR; `noctalia-greeter` comes from the `lionheartp/Hyprland` repo, which is restricted via `includepkgs=noctalia-greeter*`.

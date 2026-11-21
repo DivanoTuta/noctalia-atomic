@@ -9,6 +9,7 @@ on:
       - 'files/**'
       - 'modules/**'
       - 'cosign.pub'
+      - '.editorconfig'
       - '.github/workflows/**'
   pull_request:
     branches:
@@ -18,6 +19,7 @@ on:
       - 'files/**'
       - 'modules/**'
       - 'cosign.pub'
+      - '.editorconfig'
       - '.github/workflows/**'
   schedule:
     # Ejecuta una compilación diaria a las 06:00 UTC
@@ -39,30 +41,56 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Validate shell scripts
+      - name: Validate shell scripts and desktop entries
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends shfmt
-          shfmt -d -i 4 -ci \
-            files/system/usr/libexec/noctalia-greeter-wrapper.sh \
-            files/system/usr/lib/systemd/user-environment-generators/10-noctalia-graphics.sh
-          sh -n files/system/usr/libexec/noctalia-greeter-wrapper.sh
-          sh -n files/system/usr/lib/systemd/user-environment-generators/10-noctalia-graphics.sh
-          shellcheck --shell=sh --external-sources \
-            files/system/usr/libexec/noctalia-greeter-wrapper.sh \
-            files/system/usr/lib/systemd/user-environment-generators/10-noctalia-graphics.sh
+          sudo apt-get install -y --no-install-recommends shfmt shellcheck desktop-file-utils
 
-      - name: Validate Python extension
+          mapfile -d '' shell_scripts < <(find files -type f \( -name '*.sh' -o -name '*.bash' \) -print0)
+          if ((${#shell_scripts[@]} > 0)); then
+            shfmt -d "${shell_scripts[@]}"
+            for script in "${shell_scripts[@]}"; do
+              shebang="$(head -n 1 "${script}")"
+              if [[ "${shebang}" == *bash* ]]; then
+                bash -n "${script}"
+                shellcheck --shell=bash --external-sources "${script}"
+              else
+                sh -n "${script}"
+                shellcheck --shell=sh --external-sources "${script}"
+              fi
+            done
+          fi
+
+          mapfile -d '' desktop_files < <(find files -type f -name '*.desktop' -print0)
+          if ((${#desktop_files[@]} > 0)); then
+            desktop-file-validate "${desktop_files[@]}"
+          fi
+
+      - name: Validate Python code (Ruff lint)
         uses: astral-sh/ruff-action@v4
         with:
-          src: files/system/usr/share/nautilus-python/extensions/open-alacritty.py
+          src: files
 
-      - name: Check Python formatting
+      - name: Check Python formatting (Ruff format)
         uses: astral-sh/ruff-action@v4
         with:
           args: format --check
-          src: files/system/usr/share/nautilus-python/extensions/open-alacritty.py
+          src: files
+
+      - name: Set up Python for mypy
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Validate Python typing (mypy)
+        run: |
+          set -euo pipefail
+          python3 -m pip install --no-cache-dir mypy
+          mapfile -d '' py_files < <(find files -type f -name '*.py' -print0)
+          if ((${#py_files[@]} > 0)); then
+            mypy --strict --ignore-missing-imports "${py_files[@]}"
+          fi
 
       - name: Validate BlueBuild recipe
         run: |

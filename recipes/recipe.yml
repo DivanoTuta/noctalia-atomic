@@ -35,7 +35,6 @@ modules:
         # Terminal, Shell y Utilidades CLI
         - alacritty
         - fish
-        - fuzzel
         - wl-clipboard
         - btop
         - fastfetch
@@ -64,8 +63,9 @@ modules:
         - gvfs-nfs
         - gvfs-gphoto2
         - gvfs-afc
-        - p7zip
-        - p7zip-plugins
+        - 7zip
+        - unrar
+        - unar
         - unzip
 
         # Desarrollo y Entornos Inmutables
@@ -92,8 +92,8 @@ modules:
     snippets:
       - |
         nethogs_bin="$(readlink -f "$(command -v nethogs)")"
-        chgrp wheel "${nethogs_bin}"
-        chmod 0750 "${nethogs_bin}"
+        chgrp -- wheel "${nethogs_bin}"
+        chmod -- 0750 "${nethogs_bin}"
         setcap 'cap_net_admin,cap_net_raw,cap_dac_read_search,cap_sys_ptrace+pe' "${nethogs_bin}"
       - "authselect enable-feature with-fingerprint"
 

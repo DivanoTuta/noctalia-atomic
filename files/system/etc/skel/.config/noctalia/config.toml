@@ -2,7 +2,7 @@
 ui_scale = 1.25
 
 [backdrop]
-blur_intensity = 0.0
+blur_intensity = 0.48
 enabled = true
 tint_intensity = 0.3
 
@@ -60,17 +60,19 @@ polkit_agent = true
     auto_sync = true
 
 [theme]
+mode = "dark"
 shell_mode = "dark"
 source = "wallpaper"
 
     [theme.templates]
-    builtin_ids = [ "alacritty", "btop", "gtk3", "gtk4", "kcolorscheme", "kitty", "niri", "qt" ]
+    enable_builtin_templates = true
+    builtin_ids = [ "alacritty", "btop", "gtk3", "gtk4", "niri" ]
 
 [wallpaper.default]
-path = "/usr/share/backgrounds/noctalia/wallhaven-lyrmqy.jpg"
+path = "/usr/share/backgrounds/noctalia/wallhaven-yqw88g.jpg"
 
 [wallpaper.last]
-path = "/usr/share/backgrounds/noctalia/wallhaven-lyrmqy.jpg"
+path = "/usr/share/backgrounds/noctalia/wallhaven-yqw88g.jpg"
 
 [widget.media]
 hide_when_no_media = true

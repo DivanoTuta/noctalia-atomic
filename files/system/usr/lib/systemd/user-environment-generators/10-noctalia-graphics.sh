@@ -16,14 +16,24 @@ if /usr/bin/systemd-detect-virt --quiet --vm || [ -d /sys/module/vmwgfx ]; then
     printf 'GSK_RENDERER=gl\n'
 fi
 
-# Niri incluye de forma fija ~/.cache/niri-vm-quirks.kdl; si HOME no está definido, omitimos la escritura.
+# Niri incluye de forma opcional ~/.cache/niri-vm-quirks.kdl; si HOME no está definido, omitimos la escritura.
 if [ -z "${HOME:-}" ]; then
     exit 0
 fi
 
 cache_dir="${HOME}/.cache"
 quirks_file="${cache_dir}/niri-vm-quirks.kdl"
-mkdir -p "${cache_dir}" 2>/dev/null || exit 0
+mkdir -p -- "${cache_dir}" 2>/dev/null || exit 0
+
+tmp_file=""
+cleanup() {
+    if [ -n "${tmp_file}" ] && [ -e "${tmp_file}" ]; then
+        rm -f -- "${tmp_file}" 2>/dev/null || true
+    fi
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # Escritura atómica mediante archivo temporal para evitar lecturas parciales si Niri recarga en vivo.
 tmp_file="$(mktemp "${cache_dir}/.niri-vm-quirks.XXXXXX" 2>/dev/null)" || exit 0
@@ -36,8 +46,6 @@ else
     printf '// Hardware real: cursor DRM por hardware y blur nativo activos\n' >"${tmp_file}" 2>/dev/null || write_ok=0
 fi
 
-if [ "${write_ok}" -eq 1 ]; then
-    mv -f "${tmp_file}" "${quirks_file}" 2>/dev/null || rm -f "${tmp_file}" 2>/dev/null || true
-else
-    rm -f "${tmp_file}" 2>/dev/null || true
+if [ "${write_ok}" -eq 1 ] && mv -f -- "${tmp_file}" "${quirks_file}" 2>/dev/null; then
+    tmp_file=""
 fi

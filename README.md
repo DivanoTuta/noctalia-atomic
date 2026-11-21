@@ -10,10 +10,10 @@ Imagen personalizada de **Fedora Atomic** basada en **Universal Blue (`ghcr.io/u
 - **Desarrollo:** Visual Studio Code nativo + `distrobox` (entornos reproducibles sin tocar el sistema base).
 - **Gaming:** Steam nativo con reglas de mandos (`steam-devices`) y overlay `mangohud`.
 - **Gestión de aplicaciones:** `Bazaar` (tienda moderna), `Warehouse` (limpieza y versiones) y `Flatseal` (permisos de Flatpak).
-- **Herramientas del Sistema, Hardware y Red:** `Mission Center` (monitor de recursos, GPU, red por proceso con `nethogs` y consumo eléctrico RAPL), `Baobab` (espacio en disco), `Discos` (`gnome-disk-utility`), `File Roller` (comprimidos), `Blueman` (Bluetooth), `pavucontrol` (audio), `nm-connection-editor` (red), `Seahorse` + `gnome-keyring` (llavero de claves), `lm_sensors` (temperaturas), `brightnessctl` y `ddcutil` (brillo de monitores).
+- **Herramientas del Sistema, Hardware y Red:** `Mission Center` (monitor de recursos, GPU, red por proceso con `nethogs` y consumo eléctrico RAPL), `Baobab` (espacio en disco), `Discos` (`gnome-disk-utility`), `File Roller` (comprimidos con `7zip`, `unrar`, `unar` y `unzip`), `Blueman` (Bluetooth), `pavucontrol` (audio), `nm-connection-editor` (red), `Seahorse` + `gnome-keyring` (llavero de claves), `lm_sensors` (temperaturas), `brightnessctl` y `ddcutil` (brillo de monitores).
 - **Multimedia y Grabación:** `Kooha` (grabador de pantalla y audio GTK4), `Celluloid` (reproductor principal GTK/mpv), `VLC` (reproductor universal) y `Loupe` (visor de imágenes).
 - **Archivos:** `Nautilus` con previsualización rápida `sushi`, miniaturas de vídeo `ffmpegthumbnailer`, menú contextual (*«Abrir en Alacritty»* y *«Enviar por Bluetooth»*) y soporte nativo para dispositivos USB Android/iOS (`gvfs-mtp`, `gvfs-afc`, `gvfs-gphoto2`) y carpetas en red (`gvfs-smb`, `gvfs-nfs`).
-- **Dotfiles preconfigurados en `/etc/skel`:** Configuración lista para nuevos usuarios de Niri (teclado `es`, reglas flotantes y atajos en español), Noctalia (bloqueo automático tras 10 min de inactividad), Alacritty, Fish, temas GTK 3/4 y overrides globales de Flatpak.
+- **Dotfiles preconfigurados en `/etc/skel`:** Configuración lista para nuevos usuarios de Niri (teclado `es`, reglas flotantes y atajos adaptados a distribución española), Noctalia (bloqueo automático tras 10 min de inactividad, apagado de pantalla a los 11 min —o 30 s tras bloquear—, escala `ui_scale = 1.25` y `auto_locate = true`, personalizables desde Ajustes), Alacritty, Fish, temas GTK 3/4 y overrides globales de Flatpak.
 - **Mantenimiento del Sistema:** Integración directa con el actualizador nativo de Universal Blue (`ujust update`, accesible desde el lanzador como **Actualizar Sistema** o con el alias `update` en Fish), actualizaciones automáticas en segundo plano (`rpm-ostreed-automatic.timer`) y utilidades `ujust` para firmware (`fwupd`), *changelogs* y limpieza.
 
 ---
@@ -29,12 +29,14 @@ Imagen personalizada de **Fedora Atomic** basada en **Universal Blue (`ghcr.io/u
 - `files/system/usr/lib/systemd/user-environment-generators/10-noctalia-graphics.sh`: Generador de entorno que selecciona Vulkan/OpenGL y ajusta cursor DRM y *blur* en Niri según hardware real o máquina virtual.
 - `files/system/usr/lib/environment.d/10-noctalia-atomic.conf`: Variables de entorno globales de sesión (`ELECTRON_OZONE_PLATFORM_HINT=auto`).
 - `files/system/usr/lib/udev/rules.d/`: Reglas `udev` para sensores de energía RAPL (`99-powercap.rules`) y discos NVMe virtuales de VMware (`99-vmware-nvme.rules`).
+- `files/system/usr/share/polkit-1/rules.d/49-noctalia-greeter-sync.rules`: Regla Polkit restringida al grupo `wheel` para sincronizar la apariencia de Noctalia con `noctalia-greeter` sin pedir contraseña.
 - `files/system/usr/share/applications/system-update.desktop`: Entrada en el lanzador que ejecuta `ujust update` en una ventana flotante de Alacritty (`alacritty --hold`).
 - `files/system/usr/share/nautilus-python/extensions/open-alacritty.py`: Extensión de Nautilus para abrir carpetas locales en Alacritty.
 - `files/system/etc/skel/`: Dotfiles por defecto para nuevos usuarios (`niri`, `noctalia`, `alacritty`, `fish`, `gtk-3.0`, `gtk-4.0` y `.local/share/flatpak/overrides/global`).
-- `files/system/usr/share/backgrounds/noctalia/`: Fondos de pantalla preinstalados.
+- `files/system/usr/share/backgrounds/noctalia/`: Fondo de pantalla preinstalado.
+- `.editorconfig`: Reglas de formato compartidas para scripts shell (`shfmt` y editores).
 - `cosign.pub`: Clave pública de verificación de firma de la imagen.
-- `.github/workflows/build.yml`: Pipeline de GitHub Actions que valida receta/scripts y compila/publica la imagen en GHCR (`ghcr.io/<tu-usuario>/noctalia-atomic`).
+- `.github/workflows/build.yml`: Pipeline de GitHub Actions que valida receta, scripts, archivos `.desktop` y Python (`ruff`/`mypy`), y compila/publica la imagen en GHCR (`ghcr.io/<tu-usuario>/noctalia-atomic`).
 
 ---
 
@@ -101,7 +103,7 @@ systemctl reboot
 > [!IMPORTANT]
 > Los archivos de `/etc/skel` solo se copian automáticamente al crear **usuarios nuevos**. Si has hecho rebase desde una instalación previa de Fedora Atomic con tu carpeta personal ya existente, copia los dotfiles base sin sobrescribir tus archivos previos:
 > ```bash
-> cp -rn /etc/skel/. ~/
+> cp -r --update=none /etc/skel/. ~/
 > ```
 
 ### 2. Actualizar el sistema y utilidades `ujust`
@@ -124,9 +126,12 @@ Cuando quieras actualizar manualmente al momento, abre **Actualizar Sistema** de
    sudo authselect enable-feature with-fingerprint
    ```
 > [!NOTE]
-> Al iniciar sesión mediante huella en `greetd`, PAM no recibe tu contraseña en claro y no puede descifrar automáticamente el llavero `gnome-keyring`. Si usas cifrado de disco completo (LUKS) y prefieres evitar el aviso del llavero, puedes gestionar su contraseña desde **Seahorse**.
+> - `greeter.toml` habilita `allow_empty_password = true` para poder pulsar **Enter** con el campo vacío e iniciar la lectura biométrica en `greetd`. Debido a cómo serializa PAM los módulos en Fedora (`pam_fprintd` antes de `pam_unix`), mientras se espera la huella el inicio con contraseña queda en espera hasta que la lectura finalice o expire su *timeout*.
+> - Al iniciar sesión mediante huella en `greetd`, PAM no recibe tu contraseña en claro y no puede descifrar automáticamente el llavero `gnome-keyring`. Si usas cifrado de disco completo (LUKS) y prefieres evitar el aviso del llavero, puedes gestionar su contraseña desde **Seahorse**.
 
 ### 4. Atajos de teclado esenciales (Niri)
+
+En sesión normal, `Mod` equivale a la tecla `Super` (Windows). Los atajos están adaptados a distribución de teclado español (`es`):
 
 | Atajo | Acción |
 | :--- | :--- |
@@ -137,21 +142,24 @@ Cuando quieras actualizar manualmente al momento, abre **Actualizar Sistema** de
 | `Mod + E` | Abrir gestor de archivos (Nautilus) |
 | `Mod + Q` | Cerrar ventana activa |
 | `Mod + F` / `Mod + Shift + F` | Maximizar columna / Pantalla completa |
+| `Mod + -` / `Mod + +` | Reducir / ampliar ancho de columna (`-10%` / `+10%`) |
+| `Mod + Alt + ←` / `Mod + Alt + →` | Integrar o expulsar ventana hacia la columna izquierda / derecha |
 | `Mod + V` | Alternar ventana flotante |
 | `Mod + O` | Vista general (*Overview*) |
 | `Print` / `Ctrl + Print` / `Alt + Print` | Captura de área / pantalla / ventana (`~/Imágenes/Capturas/`) |
 | `Shift + Print` | Capturar y anotar (Noctalia) |
 | `Super + Alt + L` | Bloquear pantalla (Noctalia) |
-| `Mod + Shift + /` | Mostrar ayuda interactiva con todos los atajos |
+| `Mod + F1` | Mostrar ayuda interactiva con todos los atajos |
 
 ---
 
 ## Seguridad y Permisos Locales
 
-Para que **Mission Center** pueda mostrar métricas avanzadas sin ejecutar toda la aplicación como `root`, la imagen aplica dos ajustes restringidos **exclusivamente al grupo `wheel`** (usuarios administradores en Fedora):
+Para habilitar métricas avanzadas de **Mission Center** y la sincronización fluida del greeter sin otorgar permisos globales ni ejecutar aplicaciones completas como `root`, la imagen aplica tres ajustes restringidos **exclusivamente al grupo `wheel`** (usuarios administradores en Fedora):
 
 - **Tráfico de red por proceso (`nethogs`):** se aplican las *capabilities* recomendadas por Mission Center (`cap_net_admin,cap_net_raw,cap_dac_read_search,cap_sys_ptrace+pe`), pero el binario queda con permisos `0750 root:wheel` para impedir su ejecución por cuentas de servicio o usuarios sin privilegios.
-- **Consumo eléctrico de CPU (RAPL):** la regla `99-powercap.rules` otorga permisos `0440 root:wheel` sobre `/sys/.../intel-rapl:*/energy_uj`. Limitar la lectura al grupo `wheel` evita exponer el contador a todo el sistema y reduce la superficie del ataque de canal lateral PLATYPUS (CVE-2020-8694).
+- **Consumo eléctrico de CPU (RAPL):** la regla `99-powercap.rules` otorga permisos `0440 root:wheel` sobre `/sys/.../intel-rapl*/energy_uj`. Limitar la lectura al grupo `wheel` evita exponer el contador a todo el sistema y reduce la superficie del ataque de canal lateral PLATYPUS (CVE-2020-8694).
+- **Sincronización automática de `noctalia-greeter`:** la regla Polkit `49-noctalia-greeter-sync.rules` autoriza sin contraseña la acción acotada `org.noctalia.greeter.sync-appearance` (`/usr/bin/noctalia-greeter-apply-appearance`) únicamente para sesiones locales activas de usuarios en `wheel`. El resto de cuentas mantienen la petición estándar de contraseña de administrador.
 
 ---
 

@@ -177,7 +177,7 @@ window-rule {
 // Diálogos de sistema y herramientas compactas (tamaño natural)
 window-rule {
     match app-id=r#"nm-connection-editor$"#
-    match app-id=r#"seahorse$"#
+    match app-id=r#"^org\.gnome\.seahorse\.Application$"#
     match app-id=r#"blueman-manager$"#
     match app-id=r#"Blueman-manager$"#
     match app-id=r#"io\.github\.seadve\.Kooha$"#
@@ -194,7 +194,7 @@ window-rule {
 }
 
 binds {
-    Mod+Shift+Slash { show-hotkey-overlay; }
+    Mod+F1 { show-hotkey-overlay; }
 
     // Programas principales: terminal, explorador de archivos, lanzador, paneles y bloqueo
     Mod+T hotkey-overlay-title="Abrir terminal: Alacritty" { spawn "alacritty"; }
@@ -310,8 +310,8 @@ binds {
     Mod+Ctrl+8 { move-column-to-workspace 8; }
     Mod+Ctrl+9 { move-column-to-workspace 9; }
 
-    Mod+BracketLeft  { consume-or-expel-window-left; }
-    Mod+BracketRight { consume-or-expel-window-right; }
+    Mod+Alt+Left  { consume-or-expel-window-left; }
+    Mod+Alt+Right { consume-or-expel-window-right; }
 
     Mod+Comma  { consume-window-into-column; }
     Mod+Period { expel-window-from-column; }
@@ -330,9 +330,9 @@ binds {
     Mod+Ctrl+C { center-visible-columns; }
 
     Mod+Minus { set-column-width "-10%"; }
-    Mod+Equal { set-column-width "+10%"; }
+    Mod+Plus { set-column-width "+10%"; }
     Mod+Shift+Minus { set-window-height "-10%"; }
-    Mod+Shift+Equal { set-window-height "+10%"; }
+    Mod+Shift+Plus { set-window-height "+10%"; }
 
     Mod+V       { toggle-window-floating; }
     Mod+Shift+V { switch-focus-between-floating-and-tiling; }

@@ -2,11 +2,13 @@
 
 import logging
 import shutil
-from collections.abc import Sequence
 from pathlib import Path
-from typing import Final, Protocol, cast
+from typing import TYPE_CHECKING, Final, Protocol, cast
 
 import gi
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 gi.require_version("Nautilus", "4.0")
 
@@ -105,7 +107,7 @@ class OpenAlacrittyExtension(
         """
         if not args:
             return []
-        files = cast(Sequence[_NautilusFileInfo], args[-1])
+        files = cast("Sequence[_NautilusFileInfo]", args[-1])
         if len(files) != 1:
             return []
         directory = self._resolve_local_directory(files[0], require_directory=True)
@@ -128,7 +130,7 @@ class OpenAlacrittyExtension(
         """
         if not args or args[-1] is None:
             return []
-        folder = cast(_NautilusFileInfo, args[-1])
+        folder = cast("_NautilusFileInfo", args[-1])
         directory = self._resolve_local_directory(folder, require_directory=False)
         if directory is None:
             return []

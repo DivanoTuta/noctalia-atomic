@@ -15,4 +15,4 @@ if [ -d /sys/module/vmwgfx ]; then
     export LIBGL_ALWAYS_SOFTWARE=1
 fi
 
-exec /usr/bin/noctalia-greeter-session --session Niri "$@"
+exec /usr/bin/noctalia-greeter-session "$@"
