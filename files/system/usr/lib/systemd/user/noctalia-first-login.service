@@ -1,0 +1,13 @@
+[Unit]
+Description=Sincronización inicial de avatar y greeter de Noctalia Atomic
+PartOf=graphical-session.target
+After=graphical-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+ConditionPathExists=!%S/noctalia-atomic/first-login-done
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/noctalia-first-login.sh
+
+[Install]
+WantedBy=graphical-session.target

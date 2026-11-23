@@ -24,6 +24,7 @@ Imagen personalizada de **Fedora Atomic** basada en **Universal Blue (`ghcr.io/u
 - `files/dnf/`: Definiciones de repositorios externos (`lionheartp-Hyprland.repo` restringido a `noctalia-greeter*` y `vscode.repo` restringido a `code`).
 - `files/system/etc/greetd/config.toml`: Configuración de `greetd` apuntando al wrapper de `noctalia-greeter-session`.
 - `files/system/usr/libexec/noctalia-greeter-wrapper.sh`: Wrapper de `noctalia-greeter-session` con detección automática de VMware (`vmwgfx`).
+- `files/system/usr/libexec/noctalia-first-login.sh` y `files/system/usr/lib/systemd/user/noctalia-first-login.service`: Servicio `systemd --user` de un solo uso que registra el avatar por defecto en `accountsservice` y ejecuta el primer `noctalia msg greeter-sync` (para usuarios en `wheel`) en el primer inicio de sesión gráfico.
 - `files/system/usr/share/noctalia-atomic/greeter.toml` y `files/system/usr/lib/tmpfiles.d/noctalia-greeter.conf`: Configuración declarativa del greeter aplicada en cada arranque (`C+`) sobre `/var/lib/noctalia-greeter/greeter.toml`.
 - `files/system/usr/share/noctalia-atomic/mountain.jpg`: Avatar de usuario por defecto (`512×512`) configurado en Noctalia y sincronizado con `noctalia-greeter` mediante `accountsservice`.
 - `files/system/usr/lib/systemd/system/greetd.service.d/override.conf`: Drop-in de `greetd.service` (orden de arranque tras Plymouth, fallback a `getty@tty1` y etiquetado SELinux).

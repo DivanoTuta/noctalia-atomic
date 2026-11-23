@@ -178,6 +178,7 @@ modules:
         - power-profiles-daemon.service
     user:
       enabled:
+        - noctalia-first-login.service
         - oo7-daemon.service
       masked:
         - app-blueman@autostart.service
