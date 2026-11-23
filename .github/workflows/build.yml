@@ -83,6 +83,15 @@ jobs:
         with:
           python-version: '3.14'
 
+      - name: Validate Python typing (mypy)
+        run: |
+          set -euo pipefail
+          python3 -m pip install --no-cache-dir mypy pyyaml
+          mapfile -d '' py_files < <(find files -type f -name '*.py' -print0)
+          if ((${#py_files[@]} > 0)); then
+            mypy --strict --ignore-missing-imports "${py_files[@]}"
+          fi
+
       - name: Validate TOML configuration files
         run: |
           set -euo pipefail
@@ -95,14 +104,31 @@ jobs:
               print(f"TOML OK: {path}")
           '
 
-      - name: Validate Python typing (mypy)
+      - name: Validate recipe.yml script snippets
         run: |
           set -euo pipefail
-          python3 -m pip install --no-cache-dir mypy
-          mapfile -d '' py_files < <(find files -type f -name '*.py' -print0)
-          if ((${#py_files[@]} > 0)); then
-            mypy --strict --ignore-missing-imports "${py_files[@]}"
-          fi
+          tmp_dir="$(mktemp --directory)"
+          trap 'rm --recursive --force -- "${tmp_dir}"' EXIT
+          python3 - "${tmp_dir}" <<'PY'
+          import pathlib, sys, yaml
+
+          out_dir = pathlib.Path(sys.argv[1])
+          with open("recipes/recipe.yml", encoding="utf-8") as handle:
+              recipe = yaml.safe_load(handle)
+          for mod in recipe.get("modules", []):
+              if mod.get("type") == "script":
+                  for idx, snippet in enumerate(mod.get("snippets", [])):
+                      script_path = out_dir / f"snippet_{idx}.sh"
+                      script_path.write_text(
+                          f"#!/usr/bin/env bash\nset -euo pipefail\n{snippet}\n",
+                          encoding="utf-8",
+                      )
+          PY
+          for snippet_file in "${tmp_dir}"/snippet_*.sh; do
+            [[ -f "${snippet_file}" ]] || continue
+            bash -n "${snippet_file}"
+            shellcheck --shell=bash --external-sources "${snippet_file}"
+          done
 
       - name: Validate BlueBuild recipe
         run: |

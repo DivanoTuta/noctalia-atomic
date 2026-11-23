@@ -48,8 +48,11 @@ modules:
         - wl-clipboard
         - btop
         - fastfetch
+        - ripgrep
+        - jq
+        - yq
 
-        # Audio, Brillo, Energía, Sensores y Red (control de hardware)
+        # Audio, Brillo, Energía, Sensores, Red e Impresión (control de hardware)
         - playerctl
         - brightnessctl
         - pavucontrol
@@ -58,9 +61,19 @@ modules:
         - blueman
         - power-profiles-daemon
         - upower
+        - powertop
         - ddcutil
         - lm_sensors
         - nethogs
+        - pciutils
+        - usbutils
+        - bolt
+        - cups
+        - cups-filters
+        - ipp-usb
+        - avahi
+        - nss-mdns
+        - system-config-printer
 
         # Gestor de archivos, discos y complementos de Nautilus
         - nautilus
@@ -69,6 +82,10 @@ modules:
         - gnome-disk-utility
         - gparted
         - xhost
+        - exfatprogs
+        - ntfs-3g
+        - ntfsprogs
+        - dosfstools
         - sushi
         - ffmpegthumbnailer
         - gvfs-mtp
@@ -83,6 +100,7 @@ modules:
 
         # Desarrollo y Entornos Inmutables
         - distrobox
+        - podman-compose
         - code
 
         # Gaming y Rendimiento
@@ -90,8 +108,9 @@ modules:
         - steam-devices
         - mangohud
 
-        # Fuentes del sistema, iconos y ofimática
+        # Fuentes del sistema, iconos, temas y ofimática
         - papirus-icon-theme
+        - adw-gtk3-theme
         - google-noto-sans-cjk-fonts
         - google-noto-emoji-fonts
         - google-carlito-fonts
@@ -152,9 +171,11 @@ modules:
     system:
       enabled:
         - accounts-daemon.service
+        - avahi-daemon.service
+        - bluetooth.service
+        - cups.service
         - greetd.service
         - power-profiles-daemon.service
-        - bluetooth.service
     user:
       enabled:
         - oo7-daemon.service
