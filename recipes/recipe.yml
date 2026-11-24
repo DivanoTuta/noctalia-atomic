@@ -31,7 +31,7 @@ modules:
         - accountsservice
         - xwayland-satellite
 
-        # Portales XDG, Llavero (oo7), Polkit y Biometría
+        # Portales XDG, Llavero (oo7), Polkit, Biometría y Tarjetas Inteligentes
         - xdg-desktop-portal-gnome
         - xdg-desktop-portal-gtk
         - oo7-daemon
@@ -41,6 +41,10 @@ modules:
         - seahorse
         - fprintd
         - fprintd-pam
+        - pcsc-lite
+        - pcsc-lite-ccid
+        - opensc
+        - p11-kit-server
 
         # Terminal, Shell y Utilidades CLI
         - alacritty
@@ -175,11 +179,13 @@ modules:
         - bluetooth.service
         - cups.service
         - greetd.service
+        - pcscd.socket
         - power-profiles-daemon.service
     user:
       enabled:
         - noctalia-first-login.service
         - oo7-daemon.service
+        - p11-kit-server.socket
       masked:
         - app-blueman@autostart.service
         - org.freedesktop.IBus.session.GNOME.service

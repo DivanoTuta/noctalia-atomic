@@ -10,7 +10,7 @@ Imagen personalizada de **Fedora Atomic** basada en **Universal Blue (`ghcr.io/u
 - **Desarrollo:** Visual Studio Code nativo + `distrobox` y `podman-compose` (entornos reproducibles sin tocar el sistema base).
 - **Gaming:** Steam nativo con reglas de mandos (`steam-devices`) y overlay `mangohud`.
 - **Gestión de aplicaciones:** `Bazaar` (tienda moderna), `Warehouse` (limpieza y versiones) y `Flatseal` (permisos de Flatpak).
-- **Herramientas del Sistema, Hardware, Red e Impresión:** `Mission Center` (monitor de recursos, GPU, red por proceso con `nethogs` y consumo eléctrico RAPL), `Baobab` (espacio en disco), `Discos` (`gnome-disk-utility`), `GParted` (particionado avanzado con soporte `exfatprogs`, `ntfs-3g`/`ntfsprogs` y `dosfstools`, y `mate-polkit` como proveedor ligero de `PolicyKit-authentication-agent`), `File Roller` (comprimidos con `7zip`, `unrar`, `unar` y `unzip`), `Blueman` (Bluetooth bajo demanda vía D-Bus, con autostart enmascarado para no duplicar el widget de Noctalia), `pavucontrol` (audio), `nm-connection-editor` + `nm-connection-editor-desktop` (red y WireGuard), `CUPS` + `Avahi`/`nss-mdns` + `system-config-printer` (impresión en red e IPP/USB), `bolt` (docks Thunderbolt/USB4), `pciutils` (`lspci`) y `usbutils` (`lsusb`), `Seahorse` + `oo7` (`oo7-daemon`, `oo7-portal`, `pam_oo7` como llavero de secretos moderno en Rust), `lm_sensors` (temperaturas), `powertop` (diagnóstico de consumo energético), `brightnessctl` y `ddcutil` (brillo de monitores).
+- **Herramientas del Sistema, Hardware, Red e Impresión:** `Mission Center` (monitor de recursos, GPU, red por proceso con `nethogs` y consumo eléctrico RAPL), `Baobab` (espacio en disco), `Discos` (`gnome-disk-utility`), `GParted` (particionado avanzado con soporte `exfatprogs`, `ntfs-3g`/`ntfsprogs` y `dosfstools`, y `mate-polkit` como proveedor ligero de `PolicyKit-authentication-agent`), `File Roller` (comprimidos con `7zip`, `unrar`, `unar` y `unzip`), `Blueman` (Bluetooth bajo demanda vía D-Bus, con autostart enmascarado para no duplicar el widget de Noctalia), `pavucontrol` (audio), `nm-connection-editor` + `nm-connection-editor-desktop` (red y WireGuard), `CUPS` + `Avahi`/`nss-mdns` + `system-config-printer` (impresión en red e IPP/USB), `bolt` (docks Thunderbolt/USB4), `pciutils` (`lspci`) y `usbutils` (`lsusb`), `Seahorse` + `oo7` (`oo7-daemon`, `oo7-portal`, `pam_oo7` como llavero de secretos moderno en Rust), soporte de **tarjetas inteligentes / DNIe** (`pcsc-lite`, `pcsc-lite-ccid`, `opensc` y `p11-kit-server` activados bajo demanda), `lm_sensors` (temperaturas), `powertop` (diagnóstico de consumo energético), `brightnessctl` y `ddcutil` (brillo de monitores).
 - **Multimedia y Grabación:** `Kooha` (grabador de pantalla y audio GTK4), `Celluloid` (reproductor principal GTK/mpv), `VLC` (reproductor universal) y `Loupe` (visor de imágenes).
 - **Archivos:** `Nautilus` con previsualización rápida `sushi`, miniaturas de vídeo `ffmpegthumbnailer`, menú contextual (*«Abrir en Alacritty»* y *«Enviar por Bluetooth»*) y soporte nativo para dispositivos USB Android/iOS (`gvfs-mtp`, `gvfs-afc`, `gvfs-gphoto2`) y carpetas en red (`gvfs-smb`, `gvfs-nfs`).
 - **Dotfiles preconfigurados en `/etc/skel`:** Configuración lista para nuevos usuarios de Niri (teclado `es`, reglas flotantes y atajos adaptados a distribución española), Noctalia (bloqueo automático tras 10 min de inactividad, apagado de pantalla a los 11 min —o 30 s tras bloquear—, escala `ui_scale = 1.25` y `auto_locate = true`, personalizables desde Ajustes), Alacritty, `btop`, Fish, temas GTK 3/4 (`adw-gtk3-dark` y `Papirus-Dark` por defecto) y overrides globales de Flatpak.
@@ -36,7 +36,7 @@ Imagen personalizada de **Fedora Atomic** basada en **Universal Blue (`ghcr.io/u
 - `files/system/usr/share/polkit-1/rules.d/49-noctalia-greeter-sync.rules`: Regla Polkit restringida al grupo `wheel` para sincronizar la apariencia de Noctalia con `noctalia-greeter` sin pedir contraseña.
 - `files/system/usr/share/applications/system-update.desktop`: Entrada en el lanzador que ejecuta `ujust update` en una ventana flotante de Alacritty con aviso final para cerrar con `Enter`.
 - `files/system/usr/share/nautilus-python/extensions/open-alacritty.py`: Extensión de Nautilus para abrir carpetas locales en Alacritty.
-- `files/system/etc/skel/`: Dotfiles por defecto para nuevos usuarios (`niri`, `noctalia`, `alacritty`, `btop`, `fish`, `gtk-3.0`, `gtk-4.0` y `.local/share/flatpak/overrides/global`).
+- `files/system/etc/skel/`: Dotfiles por defecto para nuevos usuarios (`niri`, `noctalia`, `alacritty`, `btop`, `fish`, `gtk-3.0`, `gtk-4.0` y overrides de Flatpak en `.local/share/flatpak/overrides/`).
 - `files/system/usr/share/backgrounds/noctalia/`: Fondo de pantalla preinstalado.
 - `.editorconfig`: Reglas de formato compartidas para scripts shell (`shfmt` y editores).
 - `cosign.pub`: Clave pública de verificación de firma de la imagen.
@@ -210,7 +210,25 @@ Cuando quieras actualizar manualmente al momento, abre **Actualizar Sistema** de
 > - `greeter.toml` habilita `allow_empty_password = true` para poder pulsar **Enter** con el campo vacío e iniciar la lectura biométrica en `greetd`. Debido a cómo serializa PAM los módulos en Fedora (`pam_fprintd` antes de `pam_unix`), mientras se espera la huella el inicio con contraseña queda en espera hasta que la lectura finalice o expire su *timeout*.
 > - Al iniciar sesión mediante huella en `greetd`, PAM no recibe tu contraseña en claro y no puede descifrar automáticamente el llavero (`oo7-daemon`). Si usas cifrado de disco completo (LUKS) y prefieres evitar el aviso del llavero, puedes gestionar su contraseña desde **Seahorse**.
 
-### 4. Atajos de teclado esenciales (Niri)
+### 4. Tarjetas inteligentes (DNIe / PKCS#11) en navegadores Flatpak
+
+La imagen incluye soporte PC/SC y PKCS#11 activado bajo demanda (`pcscd.socket` y `p11-kit-server.socket`). Puedes comprobar el lector y la tarjeta desde una terminal con:
+
+```bash
+opensc-tool --list-readers
+pkcs11-tool --list-slots
+```
+
+- **Firefox (`org.mozilla.firefox`):** el permiso del socket `xdg-run/p11-kit/pkcs11` ya viene preconfigurado en `/etc/skel/.local/share/flatpak/overrides/org.mozilla.firefox`. Solo necesitas cargar el módulo la primera vez en **Ajustes → Privacidad y seguridad → Certificados → Dispositivos de seguridad → Cargar** apuntando a:
+  ```text
+  /usr/lib/x86_64-linux-gnu/pkcs11/p11-kit-client.so
+  ```
+- **Otros navegadores Flatpak** (por seguridad no se expone en `global`): autoriza solo el navegador que necesites desde **Flatseal** (*Sistema de archivos → Otros archivos* → `xdg-run/p11-kit/pkcs11`) o mediante:
+  ```bash
+  flatpak override --user --filesystem=xdg-run/p11-kit/pkcs11 <ID.del.navegador>
+  ```
+
+### 5. Atajos de teclado esenciales (Niri)
 
 En sesión normal, `Mod` equivale a la tecla `Super` (Windows). Los atajos están adaptados a distribución de teclado español (`es`):
 
