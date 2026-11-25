@@ -138,9 +138,20 @@ modules:
       - "authselect enable-feature with-fingerprint"
       - "glib-compile-schemas /usr/share/glib-2.0/schemas"
       - |
-        for pam_file in /etc/pam.d/passwd /usr/lib/pam.d/greetd; do
+        # Usar password-auth en greetd para autenticar solo con contraseña al iniciar sesión
+        # y desbloquear oo7 automáticamente (fprintd sigue activo en system-auth para sudo, bloqueo y Polkit)
+        greetd_pam="/usr/lib/pam.d/greetd"
+        if [[ -f "${greetd_pam}" ]]; then
+          sed --in-place --regexp-extended \
+            's/^(auth[[:space:]]+(substack|include)[[:space:]]+)system-auth$/\1password-auth/' \
+            "${greetd_pam}"
+          grep --quiet --extended-regexp \
+            '^auth[[:space:]]+(substack|include)[[:space:]]+password-auth$' \
+            "${greetd_pam}"
+        fi
+        for pam_file in /etc/pam.d/passwd "${greetd_pam}"; do
           if [[ -f "${pam_file}" ]] && ! grep --quiet --extended-regexp 'pam_oo7\.so.*use_authtok' "${pam_file}"; then
-            printf '\n-password   optional    pam_oo7.so use_authtok\n' >> "${pam_file}"
+            printf '\n-password   optional    pam_oo7.so use_authtok\n' >>"${pam_file}"
           fi
         done
 

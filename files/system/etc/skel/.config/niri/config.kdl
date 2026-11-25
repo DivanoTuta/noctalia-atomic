@@ -149,6 +149,14 @@ window-rule {
     open-floating true
 }
 
+// Reproductores de vídeo en tiling panorámico (2/3 de pantalla)
+window-rule {
+    match app-id=r#"^io\.github\.celluloid_player\.Celluloid$"#
+    match app-id=r#"^org\.videolan\.VLC$"#
+    match app-id=r#"^vlc$"#
+    default-column-width { proportion 0.66667; }
+}
+
 // Ventanas auxiliares y de configuración en modo flotante apaisado (landscape)
 window-rule {
     match app-id=r#"io\.missioncenter\.MissionCenter$"#

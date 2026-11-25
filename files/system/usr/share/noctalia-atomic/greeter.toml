@@ -23,7 +23,3 @@ enabled = true
 position = "top-center"
 time_format = "{:%H:%M}"
 date_format = "%A, %x"
-
-[auth]
-# Permite enviar el campo vacío con Enter para iniciar la autenticación biométrica (fprintd)
-allow_empty_password = true
